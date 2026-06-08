@@ -24,7 +24,7 @@ services:
     image: mongo:7
     container_name: linkedin_mongodb
     ports:
-      - "27017:27017"
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
@@ -59,6 +59,44 @@ services:
       interval: 15s
       timeout: 10s
       retries: 10
+
+  # MongoDB - Interfaz Visual - Mongo Express
+  mongo-express:
+    image: mongo-express
+    container_name: linkedin_mongo_express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      - mongodb
+
+
+  # Redis - Intervaz Visual - Redis Commander
+
+  redis-commander:
+      image: rediscommander/redis-commander
+      container_name: linkedin_redis_commander
+      ports:
+        - "8082:8081"
+      environment:
+        - REDIS_HOSTS=local:redis:6379
+      depends_on:
+        - redis
+
+
+  # PostgreSQL - Interfaz Visual - pgAdmin
+  pgadmin:
+      image: dpage/pgadmin4
+      container_name: linkedin_pgadmin
+      environment:
+        PGADMIN_DEFAULT_EMAIL: admin@admin.com
+        PGADMIN_DEFAULT_PASSWORD: secret123
+      ports:
+        - "8083:80"
+      depends_on:
+        - postgres
 
 volumes:
   postgres_data:

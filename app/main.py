@@ -15,7 +15,7 @@ def conectar_postgres():
     )
 
 def conectar_mongo():
-    cliente = MongoClient("mongodb://localhost:27017/")
+    cliente = MongoClient("mongodb://localhost:27018/")
     return cliente["linkedin_db"]
 
 def conectar_redis():
@@ -28,7 +28,7 @@ def conectar_neo4j():
 # SETUP MONGODB
 # ============================================================
 
-def setup_mongodb(db):
+# def setup_mongodb(db):
     print("\nVerificando datos en MongoDB...")
     if db.publicaciones.count_documents({}) > 0:
         print(f"  MongoDB ya tiene datos, omitiendo setup inicial.")
@@ -56,6 +56,36 @@ def setup_mongodb(db):
         {"idRemitente": 3, "idDestinatario": 5, "contenido": "Vi tu post sobre Docker, me ayudo mucho.",
          "fechaEnvio": datetime(2025, 4, 6, tzinfo=timezone.utc), "leido": True}
     ])
+    print("  Publicaciones y mensajes cargados en MongoDB")
+
+def setup_mongodb(db):
+    print("\nCargando datos en MongoDB...")
+    db.publicaciones.drop()
+    db.mensajes.drop()
+    db.publicaciones.insert_many([
+        {"idUsuario": 1, "contenido": "Muy contento de empezar en mi nuevo trabajo!", "tipo": "texto",
+         "creadoEn": datetime(2025, 4, 1, tzinfo=timezone.utc), "likes": 15,
+         "comentarios": [{"idUsuario": 2, "texto": "Felicitaciones!", "fecha": datetime(2025, 4, 1, tzinfo=timezone.utc)},
+                         {"idUsuario": 3, "texto": "Genial!", "fecha": datetime(2025, 4, 2, tzinfo=timezone.utc)}]},
+        {"idUsuario": 2, "contenido": "Compartiendo mi experiencia con Python.", "tipo": "articulo",
+         "creadoEn": datetime(2025, 3, 15, tzinfo=timezone.utc), "likes": 42,
+         "comentarios": [{"idUsuario": 1, "texto": "Muy util!", "fecha": datetime(2025, 3, 16, tzinfo=timezone.utc)}]},
+        {"idUsuario": 3, "contenido": "Buscando oportunidades en frontend.", "tipo": "texto",
+         "creadoEn": datetime(2025, 2, 10, tzinfo=timezone.utc), "likes": 8, "comentarios": []},
+        {"idUsuario": 5, "contenido": "Docker cambio mi forma de trabajar.", "tipo": "texto",
+         "creadoEn": datetime(2025, 1, 20, tzinfo=timezone.utc), "likes": 31,
+         "comentarios": [{"idUsuario": 4, "texto": "De acuerdo!", "fecha": datetime(2025, 1, 21, tzinfo=timezone.utc)}]}
+    ])
+    db.mensajes.insert_many([
+        {"idRemitente": 1, "idDestinatario": 2, "contenido": "Hola Diego, como estas?",
+         "fechaEnvio": datetime(2025, 4, 5, tzinfo=timezone.utc), "leido": True},
+        {"idRemitente": 2, "idDestinatario": 1, "contenido": "Todo bien! Nos juntamos?",
+         "fechaEnvio": datetime(2025, 4, 5, tzinfo=timezone.utc), "leido": False},
+        {"idRemitente": 3, "idDestinatario": 5, "contenido": "Vi tu post sobre Docker, me ayudo mucho.",
+         "fechaEnvio": datetime(2025, 4, 6, tzinfo=timezone.utc), "leido": True}
+    ])
+    count = db.publicaciones.count_documents({})
+    print(f"  Verificacion: {count} publicaciones en MongoDB")
     print("  Publicaciones y mensajes cargados en MongoDB")
 
 # ============================================================
