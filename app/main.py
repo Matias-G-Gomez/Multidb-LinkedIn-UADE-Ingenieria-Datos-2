@@ -913,29 +913,32 @@ def cu5_crecimiento_regional(r):
         print(f"  - {region}: {cantidad} usuario(s)")
 
 def cu6_conexiones_y_amigos_comunes(driver):
-    separador("CU 6 - Usuarios con +2 conexiones Y +1 amigo en comun")
+    separador("CU 6 - Usuarios con +500 conexiones Y +10 amigos en comun")
     print("Base usada: Neo4j")
     print("Nota: umbrales bajos por datos de prueba (reales: 500 conexiones y 10 amigos)")
     with driver.session() as session:
         result = session.run("""
-            MATCH (yo:Usuario {id: 1})-[:CONECTADO_CON]-(amigo)
-            MATCH (candidato:Usuario)-[:CONECTADO_CON]-(amigo)
-            WHERE candidato <> yo AND NOT (yo)-[:CONECTADO_CON]-(candidato)
-            WITH candidato, COUNT(DISTINCT amigo) AS enComun
-            WHERE enComun >= 1
-            MATCH (candidato)-[r:CONECTADO_CON]-()
-            WITH candidato, enComun, COUNT(r) AS totalConexiones
-            WHERE totalConexiones >= 2
-            RETURN candidato.nombre AS nombre, enComun, totalConexiones
+            MATCH (a:Usuario)-[:CONECTADO_CON]-(comun)-[:CONECTADO_CON]-(b:Usuario)
+            WHERE a <> b AND id(a) < id(b)
+            WITH a, b, COUNT(DISTINCT comun) AS enComun
+            WHERE enComun >= 10
+            MATCH (a)-[ra:CONECTADO_CON]-()
+            WITH a, b, enComun, COUNT(DISTINCT ra) AS conexionesA
+            WHERE conexionesA >= 500
+            MATCH (b)-[rb:CONECTADO_CON]-()
+            WITH a, b, enComun, conexionesA, COUNT(DISTINCT rb) AS conexionesB
+            WHERE conexionesB >= 500
+            RETURN a.nombre AS usuario1, b.nombre AS usuario2,
+                enComun, conexionesA, conexionesB
             ORDER BY enComun DESC
         """)
         filas = result.data()
         if filas:
-            print("\n  Candidatos encontrados:")
+            print("\n  Pares de usuarios encontrados:")
             for f in filas:
-                print(f"  - {f['nombre']}: {f['totalConexiones']} conexiones, {f['enComun']} amigo(s) en comun")
+                print(f"  - {f['usuario1']} y {f['usuario2']}: {f['enComun']} amigo(s) en comun | {f['conexionesA']} y {f['conexionesB']} conexiones")
         else:
-            print("\n  No se encontraron candidatos.")
+            print("\n  No se encontraron pares que cumplan los criterios.")
 
 def cu7_habilidades_por_sector(r):
     separador("CU 7 - Habilidades en tecnologia O marketing")
