@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red Profesional Multimodelo | PostgreSQL, MongoDB, Redis y Neo4j</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #f6f7f9; --card: #ffffff; --ink: #12233d; --muted: #5a6578; --line: #dce1e8;
+    --accent: #2b59c3; --track: #edf0f4;
+    --pg: #336791; --mongo: #13894a; --redis: #c8331f; --neo: #0a74d9;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0e1726; --card: #141f33; --ink: #e8edf5; --muted: #9aa6b8; --line: #24324a;
+      --accent: #8aaeff; --track: #1c2a42;
+      --pg: #7fa9d6; --mongo: #4cc38a; --redis: #f07a68; --neo: #5fb0ff;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font-family: "Schibsted Grotesk", ui-sans-serif, system-ui, "Segoe UI", Roboto, Arial, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 36px 22px 56px; }
+  header h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.4rem); font-weight: 800; letter-spacing: -0.02em; }
+  header p { margin: 8px 0 0; color: var(--muted); font-size: 1.05rem; max-width: 760px; line-height: 1.5; }
+  .notice { margin-top: 16px; font-size: .9rem; color: var(--muted); }
+  .notice.hidden { display: none; }
+
+  h2 { font-size: 1.15rem; margin: 40px 0 14px; letter-spacing: -0.01em; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+
+  /* Arquitectura */
+  .arch { padding: 20px; }
+  .app-node { text-align: center; font-weight: 700; padding: 12px; border: 1px dashed var(--line);
+              border-radius: 10px; max-width: 360px; margin: 0 auto; }
+  .app-node small { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }
+  .fan { height: 26px; margin: 0 auto; width: 75%; border: 2px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; position: relative; top: 13px; }
+  .dbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 14px; }
+  @media (max-width: 860px) { .dbs { grid-template-columns: repeat(2, 1fr); } .fan { display: none; } }
+  .db { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 10px; padding: 14px; background: var(--paper); }
+  .db b { display: block; font-size: 1.02rem; }
+  .db .role { color: var(--muted); font-size: .86rem; margin: 4px 0 10px; line-height: 1.35; min-height: 2.4em; }
+  .db .nums { display: flex; flex-wrap: wrap; gap: 12px; }
+  .db .nums span { font-size: .8rem; color: var(--muted); }
+  .db .nums strong { display: block; font-size: 1.15rem; color: var(--ink); }
+
+  /* Casos de uso */
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .cu { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .cu.wide { grid-column: 1 / -1; }
+  .cu-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .cu-head h3 { margin: 0; font-size: 1.05rem; line-height: 1.35; }
+  .cu-head .num { color: var(--muted); font-size: .8rem; font-weight: 500; display: block; margin-bottom: 4px; }
+  .badge { flex: none; font-size: .78rem; font-weight: 700; color: var(--c); border: 1px solid var(--c);
+           border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .why { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.45; }
+  .loading { color: var(--muted); font-size: .9rem; }
+  .error { color: #c0392b; font-size: .9rem; }
+  @media (prefers-color-scheme: dark) { .error { color: #ff8a80; } }
+
+  .bars { display: flex; flex-direction: column; gap: 9px; }
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 36px; align-items: center; gap: 10px; font-size: .9rem; }
+  .bar-track { height: 12px; background: var(--track); border-radius: 6px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--c); border-radius: 6px; width: 0; transition: width .9s cubic-bezier(.22,1,.36,1); }
+  .bar-row .v { text-align: right; font-weight: 700; }
+  .cols { display: flex; align-items: flex-end; gap: 8px; height: 150px; padding-top: 8px; }
+  .col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .col .stick { width: 100%; max-width: 38px; background: var(--c); border-radius: 6px 6px 0 0; height: 0; transition: height .9s cubic-bezier(.22,1,.36,1); }
+  .col small { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+  .big { font-size: 2rem; font-weight: 800; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-width: 110px; }
+  .stat b { display: block; font-size: 1.3rem; }
+  .stat small { color: var(--muted); font-size: .8rem; }
+  label { font-size: .82rem; color: var(--muted); display: block; margin-bottom: 4px; }
+  select, input { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line);
+                  background: var(--paper); color: var(--ink); font: inherit; }
+  button { border: 0; border-radius: 8px; padding: 9px 14px; background: var(--accent); color: var(--card);
+           font: inherit; font-weight: 700; cursor: pointer; }
+  button:disabled { opacity: .55; cursor: wait; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .controls { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+  ul.posts { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  ul.posts li { border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font-size: .9rem; }
+  ul.posts li span { color: var(--muted); font-size: .8rem; display: block; margin-top: 3px; }
+  .post { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .post p { margin: 0 0 4px; }
+  .post .meta { color: var(--muted); font-size: .8rem; }
+  .comments { margin: 10px 0 0; padding: 0 0 0 12px; border-left: 3px solid var(--c); list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .comments li { font-size: .88rem; }
+  .comments b { font-weight: 700; }
+  .comments span { color: var(--muted); font-size: .78rem; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; font-size: .85rem; color: var(--c); font-weight: 700; }
+  pre.doc { margin: 8px 0 0; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+            font-size: .78rem; line-height: 1.45; overflow-x: auto; white-space: pre; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; font-size: .8rem; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x: auto; }
+  .neo-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .neo-layout { grid-template-columns: 1fr; } }
+  svg text { font-family: inherit; }
+  .sector { font-weight: 700; font-size: .9rem; margin: 4px 0 2px; }
+  footer { margin-top: 36px; color: var(--muted); font-size: .85rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Red Profesional Multimodelo</h1>
+    <p>Una red profesional estilo LinkedIn construida sobre <strong>cuatro bases de datos</strong>. Cada dato vive en la base que mejor se adapta a su forma, y una aplicación en Python las mantiene sincronizadas. Abajo, los 7 casos de uso del proyecto consultados en vivo.</p>
+    <p class="notice" id="notice">Conectando con las bases… si la demo estuvo inactiva, la primera carga puede tardar alrededor de un minuto.</p>
+  </header>
+
+  <h2>Arquitectura</h2>
+  <section class="card arch" aria-label="Arquitectura">
+    <div class="app-node">Aplicación en Python<small>API con FastAPI que consulta y sincroniza las cuatro bases</small></div>
+    <div class="fan" aria-hidden="true"></div>
+    <div class="dbs">
+      <div class="db" style="--c: var(--pg)"><b>PostgreSQL</b><div class="role">Usuarios, empresas y empleos, con integridad referencial</div><div class="nums" id="n-pg"></div></div>
+      <div class="db" style="--c: var(--mongo)"><b>MongoDB</b><div class="role">Publicaciones y mensajes, con comentarios embebidos</div><div class="nums" id="n-mongo"></div></div>
+      <div class="db" style="--c: var(--redis)"><b>Redis</b><div class="role">Rankings en Sorted Sets y conteos en Hashes, en memoria</div><div class="nums" id="n-redis"></div></div>
+      <div class="db" style="--c: var(--neo)"><b>Neo4j</b><div class="role">Grafo de conexiones entre usuarios</div><div class="nums" id="n-neo"></div></div>
+    </div>
+  </section>
+
+  <h2>Casos de uso</h2>
+  <div class="grid">
+    <section class="card cu" style="--c: var(--pg)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 1</span>¿Cuántos usuarios se registraron y en qué meses?</h3><span class="badge">PostgreSQL</span></div>
+      <p class="why">Agrupación por fecha con SQL sobre la tabla de usuarios.</p>
+      <div id="cu1"><p class="loading">Cargando…</p></div>
+    </section>
+
+    <section class="card cu" style="--c: var(--redis)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 2</span>¿Qué habilidades son las más solicitadas?</h3><span class="badge">Redis</span></div>
+      <p class="why">Un Sorted Set devuelve el ranking ya ordenado, sin calcularlo en cada consulta.</p>
+      <div id="cu2"><p class="loading">Cargando…</p></div>
+    </section>
+
+    <section class="card cu" style="--c: var(--redis)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 3</span>¿Qué empresas están contratando más?</h3><span class="badge">Redis</span></div>
+      <p class="why">Ranking de empresas por ofertas activas, también en un Sorted Set.</p>
+      <div id="cu3"><p class="loading">Cargando…</p></div>
+    </section>
+
+    <section class="card cu" style="--c: var(--mongo)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 4</span>¿Cuántas recomendaciones recibió un usuario?</h3><span class="badge">MongoDB</span></div>
+      <p class="why">Suma los likes y comentarios embebidos en las publicaciones de cada usuario.</p>
+      <div><label for="usuario">Usuario</label><select id="usuario"></select></div>
+      <div id="cu4"><p class="loading">Cargando…</p></div>
+    </section>
+
+    <section class="card cu" style="--c: var(--redis)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 5</span>¿Cómo crece la red en cada región?</h3><span class="badge">Redis</span></div>
+      <p class="why">Un Hash guarda un contador por región que se actualiza con cada alta o baja.</p>
+      <div id="cu5"><p class="loading">Cargando…</p></div>
+    </section>
+
+    <section class="card cu" style="--c: var(--redis)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 7</span>¿Qué habilidades se buscan en tecnología o en marketing?</h3><span class="badge">Redis</span></div>
+      <p class="why">Cruza el ranking de habilidades con los sectores de interés.</p>
+      <div id="cu7"><p class="loading">Cargando…</p></div>
+    </section>
+
+    <section class="card cu wide" style="--c: var(--neo)">
+      <div class="cu-head"><h3><span class="num">Caso de uso 6</span>¿Qué usuarios tienen muchas conexiones y muchos amigos en común?</h3><span class="badge">Neo4j</span></div>
+      <p class="why">Recorrer relaciones es lo que mejor hace una base de grafos: Neo4j encuentra los amigos en común sin los JOINs encadenados que haría falta en SQL. A la izquierda, la red de los usuarios principales; a la derecha, la consulta sobre todo el grafo.</p>
+      <div class="neo-layout">
+        <div><svg id="red" viewBox="0 0 360 300" role="img" aria-label="Red de conexiones de los usuarios principales"></svg></div>
+        <div>
+          <div class="controls">
+            <div><label for="minCon">Conexiones mínimas</label><input id="minCon" type="number" min="1" value="70"></div>
+            <div><label for="minComun">Amigos en común mínimos</label><input id="minComun" type="number" min="1" value="45"></div>
+            <button id="runCu6">Consultar</button>
+          </div>
+          <div id="cu6" style="margin-top:12px"><p class="loading">Cargando…</p></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>Trabajo práctico de Ingeniería de Datos 2, UADE. Backend en Python con FastAPI; datos en PostgreSQL, MongoDB, Redis y Neo4j.</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = async (url) => {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`El servidor respondió ${r.status}`);
+  return r.json();
+};
+const err = (el, e) => { el.innerHTML = `<p class="error">No se pudo cargar: ${e.message}</p>`; };
+const fmt = (n) => Number(n).toLocaleString('es-AR');
+const animate = () => requestAnimationFrame(() => requestAnimationFrame(() => {
+  document.querySelectorAll('[data-w]').forEach((b) => (b.style.width = b.dataset.w));
+  document.querySelectorAll('[data-h]').forEach((b) => (b.style.height = b.dataset.h));
+}));
+
+function barras(items, unidad = '', maxGlobal = null) {
+  const max = maxGlobal || Math.max(...items.map((i) => i.valor), 1);
+  return `<div class="bars">${items.map((i) => `
+    <div class="bar-row"><span>${i.nombre}</span>
+      <div class="bar-track"><div class="bar-fill" data-w="${(i.valor / max) * 100}%"></div></div>
+      <span class="v">${i.valor}${unidad}</span></div>`).join('')}</div>`;
+}
+
+async function resumen() {
+  const r = await api('/api/resumen');
+  const nums = (pares) => pares.map(([v, t]) => `<span><strong>${fmt(v)}</strong>${t}</span>`).join('');
+  $('n-pg').innerHTML = nums([[r.postgres.usuarios, 'usuarios'], [r.postgres.empresas, 'empresas'], [r.postgres.empleos, 'empleos']]);
+  $('n-mongo').innerHTML = nums([[r.mongo.publicaciones, 'publicaciones'], [r.mongo.mensajes, 'mensajes']]);
+  $('n-redis').innerHTML = nums([[r.redis.habilidades, 'habilidades'], [r.redis.empresas, 'empresas'], [r.redis.regiones, 'regiones']]);
+  $('n-neo').innerHTML = nums([[r.neo4j.usuarios, 'usuarios'], [r.neo4j.conexiones, 'conexiones']]);
+}
+
+async function cu1() {
+  const el = $('cu1');
+  try {
+    const r = await api('/api/cu1');
+    const max = Math.max(...r.meses.map((m) => m.cantidad), 1);
+    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    el.innerHTML = `<div class="big">${r.total} <span style="font-size:1rem;font-weight:500;color:var(--muted)">usuarios registrados</span></div>
+      <div class="cols">${r.meses.map((m) => {
+        const [a, mm] = m.mes.split('-');
+        return `<div class="col" title="${m.cantidad} usuario(s)"><div class="stick" data-h="${(m.cantidad / max) * 100}%"></div><small>${meses[+mm - 1]} ${a.slice(2)}</small></div>`;
+      }).join('')}</div>`;
+    animate();
+  } catch (e) { err(el, e); }
+}
+
+async function ranking(id, url, unidad) {
+  const el = $(id);
+  try { el.innerHTML = barras(await api(url), unidad); animate(); } catch (e) { err(el, e); }
+}
+
+async function cargarUsuarios() {
+  const usuarios = await api('/api/usuarios');
+  $('usuario').innerHTML = usuarios.map((u) => `<option value="${u.id}">${u.nombre}</option>`).join('');
+  $('usuario').value = '1';
+  cu4();
+}
+
+const fecha = (iso) => iso ? new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
+
+async function cu4() {
+  const el = $('cu4');
+  el.innerHTML = '<p class="loading">Consultando…</p>';
+  try {
+    const r = await api(`/api/cu4?id=${$('usuario').value}`);
+    const posts = r.publicaciones.map((p) => `
+      <article class="post">
+        <p>${p.contenido}</p>
+        <div class="meta">${p.tipo} · ${fecha(p.fecha)} · ${p.likes} likes · ${p.comentarios.length} comentarios</div>
+        ${p.comentarios.length ? `<ul class="comments">${p.comentarios.map((c) => `<li><b>${c.autor}:</b> ${c.texto} <span>${fecha(c.fecha)}</span></li>`).join('')}</ul>` : ''}
+        <details><summary>Ver el documento en MongoDB</summary><pre class="doc">${JSON.stringify(p.documento, null, 2).replace(/</g, '&lt;')}</pre></details>
+      </article>`).join('');
+    el.innerHTML = `<div class="stats">
+        <div class="stat"><b>${r.likes}</b><small>likes recibidos</small></div>
+        <div class="stat"><b>${r.comentarios}</b><small>comentarios</small></div>
+        <div class="stat"><b>${r.publicaciones.length}</b><small>publicaciones</small></div>
+      </div>
+      ${posts
+        ? `<div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">${posts}</div>
+           <p class="why" style="margin-top:8px">Los comentarios viven dentro de cada publicación, en el mismo documento: se leen con una sola consulta, sin JOINs. Los nombres de los autores se completan desde PostgreSQL.</p>`
+        : '<p class="why" style="margin-top:10px">Este usuario todavía no publicó nada.</p>'}`;
+  } catch (e) { err(el, e); }
+}
+
+async function cu7() {
+  const el = $('cu7');
+  try {
+    const r = await api('/api/cu7');
+    const max = Math.max(...r.flatMap((s) => s.habilidades.map((h) => h.valor)), 1);
+    el.innerHTML = r.map((s) => `<p class="sector">${s.sector}</p>${barras(s.habilidades, '', max)}`).join('');
+    animate();
+  } catch (e) { err(el, e); }
+}
+
+async function cu6() {
+  const el = $('cu6');
+  $('runCu6').disabled = true;
+  el.innerHTML = '<p class="loading">Recorriendo el grafo…</p>';
+  try {
+    const r = await api(`/api/cu6?min_conexiones=${$('minCon').value}&min_comun=${$('minComun').value}`);
+    el.innerHTML = r.length
+      ? `<div class="scroll"><table><thead><tr><th>Usuario</th><th>Usuario</th><th class="n">En común</th><th class="n">Conexiones</th></tr></thead>
+         <tbody>${r.map((f) => `<tr><td>${f.usuario1}</td><td>${f.usuario2}</td><td class="n"><b>${f.enComun}</b></td><td class="n">${f.gradoA} · ${f.gradoB}</td></tr>`).join('')}</tbody></table></div>
+         <p class="why" style="margin-top:8px">Se muestran los 10 pares con más amigos en común.</p>`
+      : '<p class="why">Ningún par cumple esos criterios. Probá con valores más bajos.</p>';
+  } catch (e) { err(el, e); }
+  $('runCu6').disabled = false;
+}
+
+async function red() {
+  const svg = $('red');
+  try {
+    const { nodos, aristas } = await api('/api/red');
+    const cx = 180, cy = 150, R = 110, pos = {};
+    nodos.forEach((n, i) => {
+      const t = (i / nodos.length) * Math.PI * 2 - Math.PI / 2;
+      pos[n.id] = { x: cx + Math.cos(t) * R, y: cy + Math.sin(t) * R };
+    });
+    const ns = 'http://www.w3.org/2000/svg';
+    const el = (tag, attrs) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); return e; };
+    aristas.forEach(({ a, b }) => el('line', { x1: pos[a].x, y1: pos[a].y, x2: pos[b].x, y2: pos[b].y, stroke: 'var(--line)', 'stroke-width': 2 }));
+    nodos.forEach((n) => {
+      const p = pos[n.id];
+      el('circle', { cx: p.x, cy: p.y, r: 15, fill: 'var(--card)', stroke: 'var(--neo)', 'stroke-width': 2.5 });
+      const t = el('text', { x: p.x, y: p.y + (p.y < cy ? -22 : 30), 'text-anchor': 'middle', 'font-size': 12, fill: 'var(--ink)' });
+      t.textContent = n.nombre;
+    });
+  } catch (e) { svg.outerHTML = `<p class="error">No se pudo cargar la red: ${e.message}</p>`; }
+}
+
+$('usuario').addEventListener('change', cu4);
+$('runCu6').addEventListener('click', cu6);
+
+(async () => {
+  try {
+    await resumen();
+    $('notice').classList.add('hidden');
+  } catch (e) {
+    $('notice').textContent = `No se pudo conectar con las bases (${e.message}). Recargá la página en unos segundos.`;
+  }
+  cu1();
+  ranking('cu2', '/api/cu2', '');
+  ranking('cu3', '/api/cu3', '');
+  ranking('cu5', '/api/cu5', '');
+  cu7();
+  cargarUsuarios().catch((e) => err($('cu4'), e));
+  red();
+  cu6();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+psycopg2-binary==2.9.11
+pymongo==4.10.1
+redis==5.2.1
+neo4j==5.27.0
+python-dotenv==1.0.1
