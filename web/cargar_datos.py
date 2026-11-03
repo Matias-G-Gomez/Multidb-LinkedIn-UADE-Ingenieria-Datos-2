@@ -139,6 +139,9 @@ def cargar_neo4j():
                 MATCH (a:Usuario {id: p[0]}), (b:Usuario {id: p[1]})
                 CREATE (a)-[:CONECTADO_CON]->(b), (b)-[:CONECTADO_CON]->(a)
             """, pares=conexiones[i:i + 1000])
+        # Guarda en cada usuario su cantidad de conexiones, para que el caso de uso 6 filtre rápido
+        s.run("MATCH (u:Usuario) SET u.grado = COUNT { (u)-[:CONECTADO_CON]->() }")
+        s.run("CREATE INDEX usuario_grado IF NOT EXISTS FOR (u:Usuario) ON (u.grado)")
         total = s.run("MATCH (u:Usuario) RETURN COUNT(u) AS t").single()["t"]
         print(f"  {total} usuarios y {len(conexiones) + len(pares)} conexiones cargadas")
     driver.close()

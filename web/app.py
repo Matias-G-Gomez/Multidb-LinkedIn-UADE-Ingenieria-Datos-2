@@ -155,26 +155,29 @@ def cu6_conexiones_y_amigos_comunes(
     min_conexiones: int = Query(70, ge=1),
     min_comun: int = Query(45, ge=1),
 ):
-    """Neo4j: pares de usuarios muy conectados que comparten muchos contactos."""
+    """Neo4j: pares de usuarios muy conectados que comparten muchos contactos.
+    Cada usuario tiene guardada su cantidad de conexiones (propiedad grado) para filtrar rápido,
+    y Neo4j recorre los caminos a -> amigo en común -> b contando cuántos hay por par."""
     consulta = """
-        MATCH (a:Usuario)
-        WITH a, COUNT { (a)-[:CONECTADO_CON]->() } AS grado
-        WHERE grado >= $minCon
-        WITH collect({nodo: a, grado: grado}) AS candidatos
-        UNWIND candidatos AS x
-        UNWIND candidatos AS y
-        WITH x, y WHERE elementId(x.nodo) < elementId(y.nodo)
-        WITH x.nodo AS a, y.nodo AS b, x.grado AS gradoA, y.grado AS gradoB
-        MATCH (a)-[:CONECTADO_CON]->(c)<-[:CONECTADO_CON]-(b)
-        WITH a, b, gradoA, gradoB, COUNT(DISTINCT c) AS enComun
+        MATCH (a:Usuario) WHERE a.grado >= $minCon
+        MATCH (a)-[:CONECTADO_CON]->(c:Usuario)-[:CONECTADO_CON]->(b:Usuario)
+        WHERE b.grado >= $minCon AND a.id < b.id
+        WITH a, b, COUNT(c) AS enComun
         WHERE enComun >= $minComun
-        RETURN a.nombre AS usuario1, b.nombre AS usuario2, enComun, gradoA, gradoB
-        ORDER BY enComun DESC
+        RETURN a.nombre AS usuario1, b.nombre AS usuario2, enComun,
+               a.grado AS gradoA, b.grado AS gradoB
+        ORDER BY enComun DESC, usuario1, usuario2
         LIMIT 10
     """
-    with neo4j_driver.session() as s:
-        filas = s.run(consulta, minCon=min_conexiones, minComun=min_comun).data()
-    return filas
+    try:
+        with neo4j_driver.session() as s:
+            return s.run(consulta, minCon=min_conexiones, minComun=min_comun).data()
+    except Exception as error:
+        print("Error en el caso de uso 6:", error)
+        raise HTTPException(
+            status_code=503,
+            detail="La consulta al grafo no pudo completarse. Probá de nuevo en unos segundos o con valores más altos.",
+        )
 
 @app.get("/api/red")
 def red_base():
