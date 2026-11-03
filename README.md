@@ -2,7 +2,7 @@
 
 Sistema de gestión de datos para una red profesional estilo LinkedIn, construido sobre **cuatro bases de datos**: PostgreSQL, MongoDB, Redis y Neo4j. Cada dato se guarda en la base que mejor se adapta a su forma, y una aplicación en Python actúa como intermediaria y las mantiene sincronizadas.
 
-> 🔗 **Demo online:** [TU-LINK.onrender.com](https://TU-LINK.onrender.com)
+> 🔗 **Demo online:** [https://red-profesional-multimodelo.onrender.com/](https://red-profesional-multimodelo.onrender.com/)
 >
 > La demo está en un servidor gratuito: si nadie la usó en un rato, la primera carga puede tardar alrededor de un minuto.
 >
@@ -32,6 +32,16 @@ Las bases no se comunican entre sí. Python ejecuta las actualizaciones necesari
 | 5 | ¿Cómo crece la red en cada región? | Redis |
 | 6 | ¿Qué usuarios tienen muchas conexiones y muchos amigos en común? | Neo4j |
 | 7 | ¿Qué habilidades se buscan en tecnología o en marketing? | Redis |
+
+### Comentarios embebidos en MongoDB
+
+En el caso de uso 4, cada publicación guarda sus comentarios dentro del mismo documento, así que se leen con una sola consulta. El panel muestra el documento tal como está guardado, y completa los nombres de los autores desde PostgreSQL.
+
+![Caso de uso 4 en MongoDB](docs/capturas/mongodb.png)
+
+### Amigos en común con Neo4j
+
+En el caso de uso 6, Neo4j recorre las conexiones del grafo para encontrar pares de usuarios muy conectados que comparten muchos contactos, algo que en SQL requeriría varios JOINs encadenados sobre la misma tabla.
 
 ![Caso de uso 6 en Neo4j](docs/capturas/neo4j.png)
 
@@ -108,7 +118,7 @@ Para que responda rápido en servicios gratuitos, la demo usa un grafo de 158 us
 | GET | `/api/cu1` | Usuarios registrados por mes (PostgreSQL) |
 | GET | `/api/cu2` | Top 5 de habilidades (Redis) |
 | GET | `/api/cu3` | Top 5 de empresas (Redis) |
-| GET | `/api/cu4?id={idUsuario}` | Likes, comentarios y publicaciones de un usuario (MongoDB) |
+| GET | `/api/cu4?id={idUsuario}` | Publicaciones de un usuario con sus comentarios embebidos (MongoDB y PostgreSQL) |
 | GET | `/api/cu5` | Usuarios por región (Redis) |
 | GET | `/api/cu6?min_conexiones={n}&min_comun={n}` | Pares de usuarios con amigos en común (Neo4j) |
 | GET | `/api/cu7` | Habilidades por sector (Redis) |
